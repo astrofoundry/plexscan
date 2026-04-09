@@ -116,15 +116,15 @@ describe("webhook routes", () => {
   });
 
   describe("path rewriting", () => {
-    it("rewrites paths when configured", async () => {
+    it("rewrites radarr paths when configured", async () => {
       const rewriteConfig = loadConfig({
         PLEX_URL: "http://localhost:32400",
         PLEX_TOKEN: "test-token",
         MOVIES_SECTION_ID: "1",
         TV_SECTION_ID: "2",
         WEBHOOK_SECRET: "test-secret",
-        PATH_REWRITE_FROM: "/data",
-        PATH_REWRITE_TO: "/MEDIA",
+        RADARR_PATH_REWRITE_FROM: "/movies",
+        RADARR_PATH_REWRITE_TO: "/MEDIA/MOVIES",
       });
 
       const app = buildApp(rewriteConfig);
@@ -135,13 +135,42 @@ describe("webhook routes", () => {
         headers,
         payload: {
           eventType: "Download",
-          movie: { folderPath: "/data/movies/Foo" },
+          movie: { folderPath: "/movies/Foo" },
         },
       });
 
       expect(response.json()).toEqual({
         status: "accepted",
-        path: "/MEDIA/movies/Foo",
+        path: "/MEDIA/MOVIES/Foo",
+      });
+    });
+
+    it("rewrites sonarr paths when configured", async () => {
+      const rewriteConfig = loadConfig({
+        PLEX_URL: "http://localhost:32400",
+        PLEX_TOKEN: "test-token",
+        MOVIES_SECTION_ID: "1",
+        TV_SECTION_ID: "2",
+        WEBHOOK_SECRET: "test-secret",
+        SONARR_PATH_REWRITE_FROM: "/tv",
+        SONARR_PATH_REWRITE_TO: "/MEDIA/TV",
+      });
+
+      const app = buildApp(rewriteConfig);
+
+      const response = await app.inject({
+        method: "POST",
+        url: "/webhook/sonarr",
+        headers,
+        payload: {
+          eventType: "Download",
+          series: { path: "/tv/Breaking Bad" },
+        },
+      });
+
+      expect(response.json()).toEqual({
+        status: "accepted",
+        path: "/MEDIA/TV/Breaking Bad",
       });
     });
   });

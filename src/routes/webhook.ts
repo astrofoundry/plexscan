@@ -1,6 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import type { Config } from "../config.js";
-import { rewritePath } from "../config.js";
+import { rewritePath, type Config } from "../config.js";
 import type { ScanDebouncer } from "../services/debounce.js";
 import { authHook } from "../hooks/auth.js";
 import {
@@ -28,7 +27,11 @@ export function webhookRoutes(
       return reply.code(400).send({ error: "invalid payload", issues: result.error.issues });
     }
 
-    const path = rewritePath(config, result.data.movie.folderPath);
+    const path = rewritePath(
+      config.RADARR_PATH_REWRITE_FROM,
+      config.RADARR_PATH_REWRITE_TO,
+      result.data.movie.folderPath,
+    );
     debouncer.schedule(path, config.MOVIES_SECTION_ID);
 
     return reply.send({ status: "accepted", path });
@@ -46,7 +49,11 @@ export function webhookRoutes(
       return reply.code(400).send({ error: "invalid payload", issues: result.error.issues });
     }
 
-    const path = rewritePath(config, result.data.series.path);
+    const path = rewritePath(
+      config.SONARR_PATH_REWRITE_FROM,
+      config.SONARR_PATH_REWRITE_TO,
+      result.data.series.path,
+    );
     debouncer.schedule(path, config.TV_SECTION_ID);
 
     return reply.send({ status: "accepted", path });

@@ -7,8 +7,10 @@
       "Bash(pnpm test:*)",
       "Bash(pnpm build:*)",
       "Bash(pnpm release:*)",
+      "Bash(pnpm format)",
       "Skill(grimoire)",
-      "Skill(grimoire:*)"
+      "Skill(grimoire:*)",
+      "Bash(curl -s *)"
     ]
   }
 }

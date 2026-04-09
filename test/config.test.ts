@@ -22,8 +22,10 @@ describe("loadConfig", () => {
     expect(config.TV_SECTION_ID).toBe("2");
     expect(config.WEBHOOK_SECRET).toBe("secret");
     expect(config.PORT).toBe(7890);
-    expect(config.PATH_REWRITE_FROM).toBeUndefined();
-    expect(config.PATH_REWRITE_TO).toBeUndefined();
+    expect(config.RADARR_PATH_REWRITE_FROM).toBeUndefined();
+    expect(config.RADARR_PATH_REWRITE_TO).toBeUndefined();
+    expect(config.SONARR_PATH_REWRITE_FROM).toBeUndefined();
+    expect(config.SONARR_PATH_REWRITE_TO).toBeUndefined();
   });
 
   it("parses custom PORT", () => {
@@ -31,14 +33,36 @@ describe("loadConfig", () => {
     expect(config.PORT).toBe(3000);
   });
 
-  it("parses path rewrite pair", () => {
+  it("parses radarr path rewrite pair", () => {
     const config = loadConfig({
       ...validEnv,
-      PATH_REWRITE_FROM: "/data",
-      PATH_REWRITE_TO: "/MEDIA",
+      RADARR_PATH_REWRITE_FROM: "/movies",
+      RADARR_PATH_REWRITE_TO: "/MEDIA/MOVIES",
     });
-    expect(config.PATH_REWRITE_FROM).toBe("/data");
-    expect(config.PATH_REWRITE_TO).toBe("/MEDIA");
+    expect(config.RADARR_PATH_REWRITE_FROM).toBe("/movies");
+    expect(config.RADARR_PATH_REWRITE_TO).toBe("/MEDIA/MOVIES");
+  });
+
+  it("parses sonarr path rewrite pair", () => {
+    const config = loadConfig({
+      ...validEnv,
+      SONARR_PATH_REWRITE_FROM: "/tv",
+      SONARR_PATH_REWRITE_TO: "/MEDIA/TV",
+    });
+    expect(config.SONARR_PATH_REWRITE_FROM).toBe("/tv");
+    expect(config.SONARR_PATH_REWRITE_TO).toBe("/MEDIA/TV");
+  });
+
+  it("parses both rewrite pairs together", () => {
+    const config = loadConfig({
+      ...validEnv,
+      RADARR_PATH_REWRITE_FROM: "/movies",
+      RADARR_PATH_REWRITE_TO: "/MEDIA/MOVIES",
+      SONARR_PATH_REWRITE_FROM: "/tv",
+      SONARR_PATH_REWRITE_TO: "/MEDIA/TV",
+    });
+    expect(config.RADARR_PATH_REWRITE_FROM).toBe("/movies");
+    expect(config.SONARR_PATH_REWRITE_FROM).toBe("/tv");
   });
 
   it("throws when PLEX_URL is missing", () => {
@@ -65,12 +89,20 @@ describe("loadConfig", () => {
     expect(() => loadConfig({ ...validEnv, PLEX_URL: "not-a-url" })).toThrow();
   });
 
-  it("throws when only PATH_REWRITE_FROM is set", () => {
-    expect(() => loadConfig({ ...validEnv, PATH_REWRITE_FROM: "/data" })).toThrow();
+  it("throws when only RADARR_PATH_REWRITE_FROM is set", () => {
+    expect(() => loadConfig({ ...validEnv, RADARR_PATH_REWRITE_FROM: "/movies" })).toThrow();
   });
 
-  it("throws when only PATH_REWRITE_TO is set", () => {
-    expect(() => loadConfig({ ...validEnv, PATH_REWRITE_TO: "/MEDIA" })).toThrow();
+  it("throws when only RADARR_PATH_REWRITE_TO is set", () => {
+    expect(() => loadConfig({ ...validEnv, RADARR_PATH_REWRITE_TO: "/MEDIA/MOVIES" })).toThrow();
+  });
+
+  it("throws when only SONARR_PATH_REWRITE_FROM is set", () => {
+    expect(() => loadConfig({ ...validEnv, SONARR_PATH_REWRITE_FROM: "/tv" })).toThrow();
+  });
+
+  it("throws when only SONARR_PATH_REWRITE_TO is set", () => {
+    expect(() => loadConfig({ ...validEnv, SONARR_PATH_REWRITE_TO: "/MEDIA/TV" })).toThrow();
   });
 
   it("throws when PORT is not a valid number", () => {
@@ -80,27 +112,16 @@ describe("loadConfig", () => {
 
 describe("rewritePath", () => {
   it("returns path unchanged when no rewrite configured", () => {
-    const config = loadConfig(validEnv);
-    expect(rewritePath(config, "/movies/The Matrix")).toBe("/movies/The Matrix");
+    expect(rewritePath(undefined, undefined, "/movies/The Matrix")).toBe("/movies/The Matrix");
   });
 
   it("rewrites path when rewrite is configured", () => {
-    const config = loadConfig({
-      ...validEnv,
-      PATH_REWRITE_FROM: "/data/movies",
-      PATH_REWRITE_TO: "/MEDIA/MOVIES",
-    });
-    expect(rewritePath(config, "/data/movies/The Matrix (1999)")).toBe(
+    expect(rewritePath("/movies", "/MEDIA/MOVIES", "/movies/The Matrix (1999)")).toBe(
       "/MEDIA/MOVIES/The Matrix (1999)",
     );
   });
 
   it("only rewrites first occurrence", () => {
-    const config = loadConfig({
-      ...validEnv,
-      PATH_REWRITE_FROM: "/data",
-      PATH_REWRITE_TO: "/media",
-    });
-    expect(rewritePath(config, "/data/data/movies")).toBe("/media/data/movies");
+    expect(rewritePath("/data", "/media", "/data/data/movies")).toBe("/media/data/movies");
   });
 });
