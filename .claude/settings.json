@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm config:*)",
+      "Bash(pnpm approve-builds:*)",
+      "Bash(pnpm check:*)",
+      "Bash(pnpm test:*)",
+      "Bash(pnpm build:*)",
+      "Bash(pnpm release:*)",
+      "Skill(grimoire)",
+      "Skill(grimoire:*)"
+    ]
+  }
+}
