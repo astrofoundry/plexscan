@@ -35,7 +35,7 @@ function json(res: ServerResponse, status: number, data: unknown): void {
   res.end(JSON.stringify(data));
 }
 
-function verifySecret(provided: string | undefined, expected: string): boolean {
+function verifySecret(provided: string | null, expected: string): boolean {
   if (!provided) return false;
   const a = Buffer.from(provided);
   const b = Buffer.from(expected);
@@ -56,18 +56,17 @@ export function buildApp(config: Config, logger: Logger): Server {
 
   const server = createServer(async (req, res) => {
     try {
+      const parsed = new URL(req.url ?? "", `http://${req.headers.host}`);
+      const pathname = parsed.pathname;
       const method = req.method;
-      const url = req.url;
 
-      if (method === "GET" && url === "/health") {
+      if (method === "GET" && pathname === "/health") {
         return json(res, 200, { status: "ok" });
       }
 
-      if (method === "POST" && (url === "/webhook/radarr" || url === "/webhook/sonarr")) {
-        const secret = Array.isArray(req.headers["x-webhook-secret"])
-          ? req.headers["x-webhook-secret"][0]
-          : req.headers["x-webhook-secret"];
-        const source = url === "/webhook/radarr" ? "radarr" : "sonarr";
+      if (method === "POST" && (pathname === "/webhook/radarr" || pathname === "/webhook/sonarr")) {
+        const source = pathname === "/webhook/radarr" ? "radarr" : "sonarr";
+        const secret = parsed.searchParams.get("secret");
 
         if (!verifySecret(secret, config.WEBHOOK_SECRET)) {
           logger.error({ source }, "unauthorized webhook attempt");
@@ -91,7 +90,7 @@ export function buildApp(config: Config, logger: Logger): Server {
           return json(res, 200, { status: "ignored", eventType: base.data.eventType });
         }
 
-        if (url === "/webhook/radarr") {
+        if (pathname === "/webhook/radarr") {
           const result = radarrDownloadSchema.safeParse(body);
           if (!result.success) {
             return json(res, 400, { error: "invalid payload" });

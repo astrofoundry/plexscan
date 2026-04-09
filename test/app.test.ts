@@ -17,10 +17,7 @@ const silentLogger: Logger = {
   error: vi.fn(),
 };
 
-const headers = {
-  "x-webhook-secret": "test-secret",
-  "content-type": "application/json",
-};
+const jsonHeader = { "content-type": "application/json" };
 
 async function request(
   server: Server,
@@ -31,9 +28,8 @@ async function request(
 ): Promise<{ status: number; body: Record<string, unknown> }> {
   const address = server.address();
   if (!address || typeof address === "string") throw new Error("server not listening");
-  const port = address.port;
 
-  const response = await fetch(`http://127.0.0.1:${port}${path}`, {
+  const response = await fetch(`http://127.0.0.1:${address.port}${path}`, {
     method,
     headers: reqHeaders,
     body: body ? JSON.stringify(body) : undefined,
@@ -79,30 +75,25 @@ describe("app", () => {
   });
 
   describe("auth", () => {
-    it("returns 401 when header is missing", async () => {
+    it("returns 401 when secret is missing", async () => {
       const res = await request(
         server,
         "POST",
         "/webhook/radarr",
         { eventType: "Test" },
-        {
-          "content-type": "application/json",
-        },
+        jsonHeader,
       );
       expect(res.status).toBe(401);
       expect(res.body).toEqual({ error: "unauthorized" });
     });
 
-    it("returns 401 when header is wrong", async () => {
+    it("returns 401 when secret is wrong", async () => {
       const res = await request(
         server,
         "POST",
-        "/webhook/radarr",
+        "/webhook/radarr?secret=wrong",
         { eventType: "Test" },
-        {
-          "x-webhook-secret": "wrong",
-          "content-type": "application/json",
-        },
+        jsonHeader,
       );
       expect(res.status).toBe(401);
     });
@@ -113,11 +104,14 @@ describe("app", () => {
       const address = server.address();
       if (!address || typeof address === "string") throw new Error("server not listening");
 
-      const response = await fetch(`http://127.0.0.1:${address.port}/webhook/radarr`, {
-        method: "POST",
-        headers,
-        body: "not json{{{",
-      });
+      const response = await fetch(
+        `http://127.0.0.1:${address.port}/webhook/radarr?secret=test-secret`,
+        {
+          method: "POST",
+          headers: jsonHeader,
+          body: "not json{{{",
+        },
+      );
 
       expect(response.status).toBe(400);
       const data = (await response.json()) as Record<string, unknown>;
@@ -130,12 +124,9 @@ describe("app", () => {
       const res = await request(
         server,
         "POST",
-        "/webhook/radarr",
-        {
-          eventType: "Download",
-          movie: { folderPath: "/movies/The Matrix (1999)" },
-        },
-        headers,
+        "/webhook/radarr?secret=test-secret",
+        { eventType: "Download", movie: { folderPath: "/movies/The Matrix (1999)" } },
+        jsonHeader,
       );
 
       expect(res.status).toBe(200);
@@ -146,11 +137,9 @@ describe("app", () => {
       const res = await request(
         server,
         "POST",
-        "/webhook/radarr",
-        {
-          eventType: "Test",
-        },
-        headers,
+        "/webhook/radarr?secret=test-secret",
+        { eventType: "Test" },
+        jsonHeader,
       );
 
       expect(res.status).toBe(200);
@@ -161,11 +150,9 @@ describe("app", () => {
       const res = await request(
         server,
         "POST",
-        "/webhook/radarr",
-        {
-          eventType: "Download",
-        },
-        headers,
+        "/webhook/radarr?secret=test-secret",
+        { eventType: "Download" },
+        jsonHeader,
       );
 
       expect(res.status).toBe(400);
@@ -177,12 +164,9 @@ describe("app", () => {
       const res = await request(
         server,
         "POST",
-        "/webhook/sonarr",
-        {
-          eventType: "Download",
-          series: { path: "/tv/Breaking Bad" },
-        },
-        headers,
+        "/webhook/sonarr?secret=test-secret",
+        { eventType: "Download", series: { path: "/tv/Breaking Bad" } },
+        jsonHeader,
       );
 
       expect(res.status).toBe(200);
@@ -193,11 +177,9 @@ describe("app", () => {
       const res = await request(
         server,
         "POST",
-        "/webhook/sonarr",
-        {
-          eventType: "Grab",
-        },
-        headers,
+        "/webhook/sonarr?secret=test-secret",
+        { eventType: "Grab" },
+        jsonHeader,
       );
 
       expect(res.status).toBe(200);
@@ -208,11 +190,9 @@ describe("app", () => {
       const res = await request(
         server,
         "POST",
-        "/webhook/sonarr",
-        {
-          eventType: "Download",
-        },
-        headers,
+        "/webhook/sonarr?secret=test-secret",
+        { eventType: "Download" },
+        jsonHeader,
       );
 
       expect(res.status).toBe(400);
@@ -246,12 +226,9 @@ describe("app", () => {
       const res = await request(
         rewriteServer,
         "POST",
-        "/webhook/radarr",
-        {
-          eventType: "Download",
-          movie: { folderPath: "/movies/Foo" },
-        },
-        headers,
+        "/webhook/radarr?secret=test-secret",
+        { eventType: "Download", movie: { folderPath: "/movies/Foo" } },
+        jsonHeader,
       );
 
       expect(res.body).toEqual({ status: "accepted", path: "/MEDIA/MOVIES/Foo" });
@@ -261,12 +238,9 @@ describe("app", () => {
       const res = await request(
         rewriteServer,
         "POST",
-        "/webhook/sonarr",
-        {
-          eventType: "Download",
-          series: { path: "/tv/Breaking Bad" },
-        },
-        headers,
+        "/webhook/sonarr?secret=test-secret",
+        { eventType: "Download", series: { path: "/tv/Breaking Bad" } },
+        jsonHeader,
       );
 
       expect(res.body).toEqual({ status: "accepted", path: "/MEDIA/TV/Breaking Bad" });
