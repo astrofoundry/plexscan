@@ -56,8 +56,8 @@ export function rewritePath(
   to: string | undefined,
   arrPath: string,
 ): string {
-  if (from && to) {
-    return arrPath.replace(from, to);
+  if (from && to && arrPath.startsWith(from)) {
+    return to + arrPath.slice(from.length);
   }
   return arrPath;
 }

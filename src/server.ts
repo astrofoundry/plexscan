@@ -1,7 +1,11 @@
 import { loadConfig } from "./config.js";
+import { createLogger } from "./logger.js";
 import { buildApp } from "./app.js";
 
 const config = loadConfig(process.env);
-const app = buildApp(config);
+const logger = createLogger();
+const server = buildApp(config, logger);
 
-await app.listen({ port: config.PORT, host: "0.0.0.0" });
+server.listen(config.PORT, "0.0.0.0", () => {
+  logger.info({ port: config.PORT }, "plexscan started");
+});

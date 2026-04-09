@@ -1,6 +1,6 @@
 # PlexScan
 
-Webhook relay: Radarr/Sonarr -> Plex partial scan. Node 24, TypeScript, Fastify 5, Zod 4, pnpm.
+Webhook relay: Radarr/Sonarr -> Plex partial scan. Node 24, TypeScript, node:http, Zod 4, pnpm.
 
 ## Scripts
 
@@ -10,21 +10,26 @@ Webhook relay: Radarr/Sonarr -> Plex partial scan. Node 24, TypeScript, Fastify 
 - `pnpm test` — Vitest
 - `pnpm lint` — ESLint
 - `pnpm format` — Prettier
+- `pnpm release:patch|minor|major` — bump, tag, push (triggers CI)
 
 ## Architecture
 
-`src/server.ts` loads config, builds app, listens.
-`src/app.ts` — Fastify app factory (`buildApp(config)`). Wires health route (no auth), webhook routes (scoped with auth hook), PlexClient, ScanDebouncer.
-`src/config.ts` — Zod env validation + `rewritePath` helper. All env vars required except `PORT` (default 7890) and optional `PATH_REWRITE_FROM`/`TO` pair.
-`src/routes/webhook.ts` — POST `/webhook/radarr` and `/webhook/sonarr`. Only processes `Download` events.
+`src/server.ts` loads config, creates logger, builds app, listens.
+`src/app.ts` — `node:http` server factory (`buildApp(config, logger)`). Routes: GET `/health` (no auth), POST `/webhook/radarr` and `/webhook/sonarr` (auth via `X-Webhook-Secret` header).
+`src/config.ts` — Zod env validation + `rewritePath` helper. All env vars required except `PORT` (default 7890) and optional per-source path rewrite pairs.
+`src/logger.ts` — Minimal structured JSON logger.
 `src/services/plex.ts` — `PlexClient` wraps `fetch` with 5s timeout, no retry.
 `src/services/debounce.ts` — `ScanDebouncer` per-path sliding window (5s).
-`src/hooks/auth.ts` — `X-Webhook-Secret` header validation.
+`src/schemas/webhook.ts` — Zod schemas for Radarr/Sonarr payloads.
 
-## Testing
+## Dependencies
 
-Tests use `fastify.inject()` for HTTP integration, `vi.useFakeTimers()` for debounce, `vi.stubGlobal("fetch")` for Plex client. Fake timers conflict with Fastify internals — debounce timing tests are in `test/services/debounce.test.ts` only.
+One production dep: `zod`. Everything else is `node:*` built-ins.
 
 ## Docker
 
-Multi-stage build: esbuild bundles everything into a single `server.mjs`. Production image has no `node_modules`.
+Multi-stage build: esbuild bundles everything into a single `server.mjs` (~500KB). Production image has no `node_modules`.
+
+## CI
+
+GitHub Actions on `v*` tags: check → build + push Docker image to GHCR → create GitHub Release.

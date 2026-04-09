@@ -121,7 +121,11 @@ describe("rewritePath", () => {
     );
   });
 
-  it("only rewrites first occurrence", () => {
+  it("only rewrites matching prefix", () => {
     expect(rewritePath("/data", "/media", "/data/data/movies")).toBe("/media/data/movies");
+  });
+
+  it("does not rewrite if prefix appears mid-path", () => {
+    expect(rewritePath("/media", "/MEDIA", "/some/media/movies")).toBe("/some/media/movies");
   });
 });

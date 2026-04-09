@@ -1,18 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { PlexClient } from "../../src/services/plex.js";
-import type { FastifyBaseLogger } from "fastify";
+import type { Logger } from "../../src/logger.js";
 
-const mockLogger = {
+const mockLogger: Logger = {
   info: vi.fn(),
   error: vi.fn(),
-  warn: vi.fn(),
-  debug: vi.fn(),
-  fatal: vi.fn(),
-  trace: vi.fn(),
-  child: vi.fn(),
-  silent: vi.fn(),
-  level: "info",
-} as unknown as FastifyBaseLogger;
+};
 
 describe("PlexClient", () => {
   beforeEach(() => {
@@ -59,6 +52,19 @@ describe("PlexClient", () => {
     expect(mockLogger.info).toHaveBeenCalledWith(
       { sectionId: "1", path: "/movies/Foo", status: 200 },
       "plex scan triggered",
+    );
+  });
+
+  it("logs error on non-200 response", async () => {
+    const mockFetch = vi.mocked(fetch);
+    mockFetch.mockResolvedValue(new Response(null, { status: 401 }));
+
+    const client = new PlexClient("http://localhost:32400", "token", mockLogger);
+    await client.scan("1", "/movies/Foo");
+
+    expect(mockLogger.error).toHaveBeenCalledWith(
+      { sectionId: "1", path: "/movies/Foo", status: 401 },
+      "plex scan failed",
     );
   });
 

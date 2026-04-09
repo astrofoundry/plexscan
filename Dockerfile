@@ -15,6 +15,7 @@ FROM node:24-alpine
 WORKDIR /app
 COPY --from=build /app/dist/server.mjs ./server.mjs
 
+USER node
 EXPOSE 7890
 
 CMD ["node", "server.mjs"]

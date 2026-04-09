@@ -1,11 +1,11 @@
-import type { FastifyBaseLogger } from "fastify";
+import type { Logger } from "../logger.js";
 
 export class PlexClient {
   private readonly baseUrl: string;
   private readonly token: string;
-  private readonly logger: FastifyBaseLogger;
+  private readonly logger: Logger;
 
-  constructor(baseUrl: string, token: string, logger: FastifyBaseLogger) {
+  constructor(baseUrl: string, token: string, logger: Logger) {
     this.baseUrl = baseUrl;
     this.token = token;
     this.logger = logger;
@@ -19,9 +19,16 @@ export class PlexClient {
       signal: AbortSignal.timeout(5000),
     });
 
-    this.logger.info(
-      { sectionId, path: folderPath, status: response.status },
-      "plex scan triggered",
-    );
+    if (response.ok) {
+      this.logger.info(
+        { sectionId, path: folderPath, status: response.status },
+        "plex scan triggered",
+      );
+    } else {
+      this.logger.error(
+        { sectionId, path: folderPath, status: response.status },
+        "plex scan failed",
+      );
+    }
   }
 }
