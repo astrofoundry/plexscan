@@ -109,6 +109,8 @@ Expected response: `{"status":"ok"}`
 
 Replace `PLEXSCAN_HOST` with the container name (e.g. `plexscan`) if on the same Docker network, or the host IP if not.
 
+![Radarr webhook configuration](.github/assets/radarr-webhook.png)
+
 ### Step 7: Configure Sonarr webhook
 
 1. Open Sonarr → **Settings → Connect → +** → select **Webhook**

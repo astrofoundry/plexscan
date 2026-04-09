@@ -26,7 +26,7 @@ describe("PlexClient", () => {
     expect(url).toBe(
       "http://localhost:32400/library/sections/1/refresh?path=%2FMEDIA%2FMOVIES%2FThe%20Matrix%20(1999)&X-Plex-Token=mytoken",
     );
-    expect(options.method).toBe("PUT");
+    expect(options.method).toBe("POST");
   });
 
   it("URI-encodes the folder path", async () => {

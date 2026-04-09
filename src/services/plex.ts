@@ -15,7 +15,7 @@ export class PlexClient {
     const url = `${this.baseUrl}/library/sections/${sectionId}/refresh?path=${encodeURIComponent(folderPath)}&X-Plex-Token=${this.token}`;
 
     const response = await fetch(url, {
-      method: "PUT",
+      method: "POST",
       signal: AbortSignal.timeout(5000),
     });
 
